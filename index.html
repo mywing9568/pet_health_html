@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>반려동물 건강 기록기</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f7f8fa;color:#1a1a1a;padding:1.5rem;min-height:100vh}
+  .wrap{max-width:680px;margin:0 auto}
+  h1{font-size:20px;font-weight:500;margin-bottom:1.5rem}
+  .card{background:#fff;border:1px solid #e8e8e8;border-radius:12px;padding:1rem 1.25rem;margin-bottom:12px}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  label{font-size:12px;color:#888;display:block;margin-bottom:4px}
+  input,select{width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:14px;font-family:inherit;outline:none;background:#fff;color:#1a1a1a}
+  input:focus,select:focus{border-color:#1D9E75}
+  .btn{padding:7px 14px;border-radius:8px;border:1px solid #ddd;background:#fff;font-size:13px;cursor:pointer;font-family:inherit}
+  .btn:hover{background:#f5f5f5}
+  .btn-primary{background:#1D9E75;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit}
+  .btn-primary:hover{background:#17896a}
+  .btn-full{width:100%;padding:10px;margin-top:8px}
+  .pet-btn{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;border:1px solid #e8e8e8;background:#fff;cursor:pointer;margin-bottom:8px;width:100%;text-align:left}
+  .pet-btn.active{border:2px solid #1D9E75;background:#f0faf6}
+  .pet-name{font-size:14px;font-weight:500}
+  .pet-sub{font-size:12px;color:#888;margin-top:2px}
+  .tabs{display:flex;border-bottom:1px solid #e8e8e8;margin-bottom:1rem}
+  .tab{flex:1;padding:9px 4px;font-size:13px;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;color:#888;font-family:inherit}
+  .tab.active{color:#1D9E75;font-weight:500;border-bottom-color:#1D9E75}
+  .rec{background:#f7f8fa;border-radius:8px;padding:12px 14px;margin-bottom:8px;position:relative}
+  .rec-date{font-size:12px;color:#888;margin-bottom:3px}
+  .rec-title{font-size:14px;font-weight:500}
+  .rec-sub{font-size:12px;color:#888;margin-top:2px}
+  .del-btn{position:absolute;top:10px;right:12px;background:none;border:none;color:#bbb;cursor:pointer;font-size:15px}
+  .del-btn:hover{color:#e24b4a}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+  .span2{grid-column:1/-1}
+  .empty{color:#aaa;font-size:13px;text-align:center;padding:2rem 0}
+  .section-label{font-size:13px;font-weight:500;color:#888;margin-bottom:8px}
+  .form-actions{display:flex;gap:8px;justify-content:flex-end}
+  .weight-big{font-size:20px;font-weight:500}
+  .weight-unit{font-size:13px;font-weight:400;color:#888}
+  svg text{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+  #chart-wrap{margin-bottom:4px}
+  .chart-title{font-size:13px;font-weight:500;color:#888;margin-bottom:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🐾 반려동물 건강 기록기</h1>
+
+  <!-- 펫 목록 -->
+  <div class="row" style="margin-bottom:8px">
+    <span class="section-label">반려동물</span>
+    <button class="btn-primary" onclick="toggleAddPet()">+ 추가</button>
+  </div>
+  <div id="pet-list"></div>
+
+  <!-- 펫 추가 폼 -->
+  <div id="add-pet-form" class="card" style="display:none;margin-bottom:1.5rem">
+    <p style="font-weight:500;font-size:14px;margin-bottom:12px">새 반려동물 등록</p>
+    <div class="grid2">
+      <div><label>이름 *</label><input id="np-name" placeholder="이름"></div>
+      <div><label>종류</label>
+        <select id="np-type"><option>강아지</option><option>고양이</option></select>
+      </div>
+      <div><label>품종</label><input id="np-breed" placeholder="예) 말티즈"></div>
+      <div><label>생년월일</label><input id="np-birth" type="date"></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="cancelAddPet()">취소</button>
+      <button class="btn-primary" onclick="addPet()">등록</button>
+    </div>
+  </div>
+
+  <!-- 기록 영역 -->
+  <div id="records-area" style="display:none">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab(0)">💉 예방접종</button>
+      <button class="tab" onclick="switchTab(1)">⚖️ 체중</button>
+      <button class="tab" onclick="switchTab(2)">🏥 병원 방문</button>
+      <button class="tab" onclick="switchTab(3)">💊 약 복용</button>
+    </div>
+    <div id="chart-area" style="display:none" class="card">
+      <p class="chart-title">체중 변화</p>
+      <div id="chart-wrap"></div>
+    </div>
+    <div id="record-list"></div>
+    <div id="add-record-form" class="card" style="display:none">
+      <p style="font-weight:500;font-size:14px;margin-bottom:12px" id="form-title">기록 추가</p>
+      <div class="grid2" id="form-fields"></div>
+      <div class="form-actions">
+        <button class="btn" onclick="cancelForm()">취소</button>
+        <button class="btn-primary" onclick="saveRecord()">저장</button>
+      </div>
+    </div>
+    <button class="btn-primary btn-full" id="add-btn" onclick="showForm()"></button>
+  </div>
+</div>
+
+<script>
+let pets = [];
+let selIdx = null;
+let curTab = 0;
+
+const TABS = ["예방접종","체중","병원 방문","약 복용"];
+const ICONS = ["💉","⚖️","🏥","💊"];
+
+const FIELDS = [
+  [{k:"date",l:"접종일",t:"date"},{k:"vaccine",l:"백신명",t:"text",p:"예) 종합백신(DHPPL)"},{k:"nextDate",l:"다음 접종일",t:"date"},{k:"clinic",l:"병원",t:"text",p:"병원명"},{k:"note",l:"메모",t:"text",p:"특이사항",full:true}],
+  [{k:"date",l:"측정일",t:"date"},{k:"weight",l:"체중 (kg)",t:"number",p:"예) 3.5",step:"0.1"},{k:"note",l:"메모",t:"text",p:"특이사항",full:true}],
+  [{k:"date",l:"방문일",t:"date"},{k:"clinic",l:"병원명",t:"text",p:"병원명"},{k:"reason",l:"방문 사유",t:"text",p:"예) 정기 검진"},{k:"diagnosis",l:"진단/처방",t:"text",p:"진단 내용",full:true},{k:"cost",l:"비용",t:"text",p:"예) 30,000원"},{k:"note",l:"메모",t:"text",p:"특이사항",full:true}],
+  [{k:"date",l:"시작일",t:"date"},{k:"medicine",l:"약품명",t:"text",p:"약품명"},{k:"dose",l:"용량/횟수",t:"text",p:"예) 하루 2회, 0.5정"},{k:"endDate",l:"종료일",t:"date"},{k:"note",l:"메모",t:"text",p:"특이사항",full:true}]
+];
+
+function fmt(d){if(!d)return"-";const[y,m,day]=d.split("-");return`${y}.${m}.${day}`}
+
+function render(){
+  const pl=document.getElementById("pet-list");
+  pl.innerHTML=pets.map((p,i)=>`
+    <button class="pet-btn${selIdx===i?" active":""}" onclick="selPet(${i})">
+      <span style="font-size:20px">${p.type==="강아지"?"🐶":"🐱"}</span>
+      <div style="flex:1">
+        <div class="pet-name">${p.name}</div>
+        <div class="pet-sub">${p.type} · ${p.breed||"품종 미입력"}${p.birth?" · "+fmt(p.birth):""}</div>
+      </div>
+      <button class="del-btn" onclick="event.stopPropagation();delPet(${i})">✕</button>
+    </button>`).join("")||"";
+
+  const ra=document.getElementById("records-area");
+  if(selIdx===null){ra.style.display="none";return;}
+  ra.style.display="block";
+
+  document.querySelectorAll(".tab").forEach((t,i)=>t.classList.toggle("active",i===curTab));
+  document.getElementById("add-btn").textContent=`+ ${TABS[curTab]} 기록 추가`;
+
+  const pet=pets[selIdx];
+  const recs=[...(pet.records[curTab]||[])].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+
+  // 체중 차트
+  const ca=document.getElementById("chart-area");
+  if(curTab===1&&recs.length>=2){
+    ca.style.display="block";
+    renderChart(pet.records[1]);
+  } else {ca.style.display="none";}
+
+  const rl=document.getElementById("record-list");
+  if(recs.length===0){
+    rl.innerHTML=`<p class="empty">기록이 없습니다. 아래 버튼으로 추가해보세요.</p>`;
+  } else {
+    rl.innerHTML=recs.map(r=>{
+      let body="";
+      if(curTab===0) body=`<div class="rec-title">${r.vaccine||"-"}</div>${r.nextDate?`<div class="rec-sub">다음 접종: ${fmt(r.nextDate)}</div>`:""}${r.clinic?`<div class="rec-sub">${r.clinic}</div>`:""}${r.note?`<div class="rec-sub">${r.note}</div>`:""}`;
+      if(curTab===1) body=`<div class="weight-big">${parseFloat(r.weight).toFixed(1)} <span class="weight-unit">kg</span></div>${r.note?`<div class="rec-sub">${r.note}</div>`:""}`;
+      if(curTab===2) body=`<div class="rec-title">${r.clinic||"-"}</div>${r.reason?`<div class="rec-sub">${r.reason}</div>`:""}${r.diagnosis?`<div class="rec-sub">${r.diagnosis}</div>`:""}${r.cost?`<div class="rec-sub">${r.cost}</div>`:""}${r.note?`<div class="rec-sub">${r.note}</div>`:""}`;
+      if(curTab===3) body=`<div class="rec-title">${r.medicine||"-"}</div>${r.dose?`<div class="rec-sub">${r.dose}</div>`:""}${r.endDate?`<div class="rec-sub">~${fmt(r.endDate)}</div>`:""}${r.note?`<div class="rec-sub">${r.note}</div>`:""}`;
+      return`<div class="rec"><div class="rec-date">${fmt(r.date)}</div>${body}<button class="del-btn" onclick="delRec(${r.id})">✕</button></div>`;
+    }).join("");
+  }
+}
+
+function renderChart(recs){
+  const sorted=[...recs].sort((a,b)=>a.date.localeCompare(b.date));
+  const ws=sorted.map(r=>parseFloat(r.weight));
+  const mn=Math.min(...ws),mx=Math.max(...ws),rng=mx-mn||1;
+  const W=600,H=160,pl=40,pr=16,pt=16,pb=32,iW=W-pl-pr,iH=H-pt-pb;
+  const pts=sorted.map((r,i)=>({
+    x:pl+(i/(sorted.length-1))*iW,
+    y:pt+iH-((parseFloat(r.weight)-mn)/rng)*iH,
+    r
+  }));
+  const path=pts.map((p,i)=>`${i===0?"M":"L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+  const area=path+` L${pts[pts.length-1].x.toFixed(1)},${(pt+iH).toFixed(1)} L${pts[0].x.toFixed(1)},${(pt+iH).toFixed(1)} Z`;
+  const gridLines=[0,0.5,1].map(t=>{
+    const y=pt+t*iH,v=(mx-t*rng).toFixed(1);
+    return`<line x1="${pl}" x2="${W-pr}" y1="${y}" y2="${y}" stroke="#eee" stroke-width="1"/>
+    <text x="${pl-6}" y="${y+4}" font-size="10" fill="#aaa" text-anchor="end">${v}</text>`;
+  }).join("");
+  const dots=pts.map(p=>`<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5" fill="#1D9E75"/>
+    <text x="${p.x.toFixed(1)}" y="${H-8}" font-size="10" fill="#aaa" text-anchor="middle">${p.r.date.slice(5)}</text>`).join("");
+  document.getElementById("chart-wrap").innerHTML=`
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto">
+      <defs><linearGradient id="wg" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#1D9E75" stop-opacity="0.15"/>
+        <stop offset="100%" stop-color="#1D9E75" stop-opacity="0"/>
+      </linearGradient></defs>
+      ${gridLines}
+      <path d="${area}" fill="url(#wg)"/>
+      <path d="${path}" fill="none" stroke="#1D9E75" stroke-width="1.5"/>
+      ${dots}
+    </svg>`;
+}
+
+function toggleAddPet(){document.getElementById("add-pet-form").style.display="block";}
+function cancelAddPet(){document.getElementById("add-pet-form").style.display="none";}
+function addPet(){
+  const name=document.getElementById("np-name").value.trim();
+  if(!name)return alert("이름을 입력해주세요.");
+  pets.push({name,type:document.getElementById("np-type").value,breed:document.getElementById("np-breed").value,birth:document.getElementById("np-birth").value,id:Date.now(),records:{0:[],1:[],2:[],3:[]}});
+  selIdx=pets.length-1;curTab=0;
+  document.getElementById("np-name").value="";document.getElementById("np-breed").value="";document.getElementById("np-birth").value="";
+  cancelAddPet();render();
+}
+function delPet(i){if(!confirm("삭제할까요?"))return;pets.splice(i,1);selIdx=pets.length>0?0:null;render();}
+function selPet(i){selIdx=i;curTab=0;cancelForm();render();}
+function switchTab(i){curTab=i;cancelForm();render();}
+
+function showForm(){
+  const ff=document.getElementById("form-fields");
+  ff.innerHTML=FIELDS[curTab].map(f=>`
+    <div class="${f.full?"span2":""}">
+      <label>${f.l}</label>
+      <input id="f-${f.k}" type="${f.t}" ${f.step?`step="${f.step}"`:""}placeholder="${f.p||""}">
+    </div>`).join("");
+  document.getElementById("form-title").textContent=`${ICONS[curTab]} ${TABS[curTab]} 추가`;
+  document.getElementById("add-record-form").style.display="block";
+  document.getElementById("add-btn").style.display="none";
+}
+function cancelForm(){
+  document.getElementById("add-record-form").style.display="none";
+  document.getElementById("add-btn").style.display="block";
+}
+function saveRecord(){
+  const rec={id:Date.now()};
+  FIELDS[curTab].forEach(f=>{rec[f.k]=document.getElementById("f-"+f.k)?.value||"";});
+  pets[selIdx].records[curTab].push(rec);
+  cancelForm();render();
+}
+function delRec(id){
+  pets[selIdx].records[curTab]=pets[selIdx].records[curTab].filter(r=>r.id!==id);
+  render();
+}
+
+render();
+</script>
+</body>
+</html>
